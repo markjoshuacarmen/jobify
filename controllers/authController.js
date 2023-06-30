@@ -1,25 +1,29 @@
 import User from '../models/User.js'
 import { StatusCodes } from 'http-status-codes'
-
-class CustomAPIError extends Error{
-    constructor(message){
-        super(message)
-        this.statusCode = StatusCodes.BAD_REQUEST
-
-    }
-}
+import { BadRequestError } from '../errors/index.js'
 
 
 
 const register = async (req,res,next ) => {
         const {name, email, password} = req.body
             if (!name || !email || !password){
-                throw new CustomAPIError ('please provide all values')
+                throw new BadRequestError ('please provide all values')
             }
-            
+            const userAlreadyExists = await User.findOne({email})
+            if(userAlreadyExists){
+                throw new BadRequestError ('email already in use')
+            }
 
         const user = await User.create(req.body)
-        res.status(StatusCodes.OK).json({ user })
+        const token = user.createJWT()
+        res.status(StatusCodes.OK).json({
+             user:{
+                email: user.email, 
+                lastname: user.lastname, 
+                location: user.location,
+                name: user.name,
+            }, token,
+        location: user.location, })
 
     } 
 
@@ -28,6 +32,10 @@ const login = async (req,res) => {
 }
 const updateUser = async (req,res) => {
     res.send('updateUser')
+   
 }
 
-export { register, login, updateUser };
+export { register, login, updateUser }; 
+
+
+
